@@ -15,7 +15,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity(debug = true)
 @ComponentScan("hello.jwt")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private JwtTokenFilterConfigurer jwtConfigurer;
@@ -31,7 +31,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
             .authorizeRequests()
-                .antMatchers("/", "/home", "/info", "/auth").permitAll()
+                .antMatchers("/home", "/info", "/auth").permitAll()
+                .antMatchers("/users").hasAuthority("123")
+                .antMatchers("/users22").hasAuthority("234")
                 .anyRequest().authenticated()
                 .and()
                 .apply(jwtConfigurer)
@@ -49,7 +51,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public UserDetailsService userDetailsService() {
         UserDetails user =
              User.withDefaultPasswordEncoder()
-                .username("user").password("password").roles("123", "234", "345")
+                .username("user").password("password").roles("123")
+//                .username("user2").password("password2").roles("234")
                 .build();
 
         return new InMemoryUserDetailsManager(user);

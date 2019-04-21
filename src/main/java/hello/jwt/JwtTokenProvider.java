@@ -16,12 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @Component
@@ -31,7 +34,7 @@ public class JwtTokenProvider {
     private static final String ISSUER = "ukva-auth-server";
     private static final String AUDIENCE = "alfa-works";
     private static final Integer CLOCK_SKEW_SECONDS = 30;
-    private static final Integer EXPIRATION_MINUTES = 1;
+    private static final Integer EXPIRATION_MINUTES = 100;
     private static final Integer VALID_BEFORE_MINUTES = 2;
     private static final String OPERATIONS = "operations";
     private static final String AUTH_HEADER = "Authorization";
@@ -72,7 +75,7 @@ public class JwtTokenProvider {
      * @return UsernamePasswordAuthenticationToken
      */
     public Authentication getAuthentication(String token) {
-        User userDetails = new User(getUsername(token), "", Collections.emptyList());
+        User userDetails = new User(getUsername(token), "", getRoles(token));
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
@@ -191,6 +194,17 @@ public class JwtTokenProvider {
         try {
             return jwtConsumer.processToClaims(token).getSubject();
         } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private Collection<? extends GrantedAuthority> getRoles(String token) {
+        try {
+            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            jwtConsumer.processToClaims(token).getStringListClaimValue(OPERATIONS).forEach(oper -> authorities.add(new SimpleGrantedAuthority(oper)));
+            return authorities;
+        } catch (InvalidJwtException | MalformedClaimException e) {
             e.printStackTrace();
             return null;
         }
